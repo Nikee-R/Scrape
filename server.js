@@ -9,8 +9,6 @@ var cheerio = require("cheerio");
 var logger = require("morgan");
 var db = require("./models");
 
-mongoose.Promise = Promise;
-
 // =================== PORTS =================== //
 
 var port = process.env.PORT || 3000;
@@ -84,3 +82,83 @@ app.get("/articles", function(req, res) {
     });
 });
 
+// For grabbing articles by id.
+app.get("/articles/:id", function(req, res) {
+
+    dbArticle.findOne({ _id: req.params.id })
+    .populate("note")
+    .then(function(dbArticle) {
+        res.json(dbArticle);
+    })
+    .catch(function(err) {
+        res.json(err);
+    });
+});
+
+// For saving articles associated to note.
+app.post("/articles/:id", function(req, res) {
+
+    db.Note
+    .create(req.body)
+    .then(function(dbNote) {
+        res.json(dbArticle);
+    })
+    .then(function(dbArticle) {
+        res.json(dbArticle);
+    })
+    .catch(function(err) {
+        res.json(err);
+    });
+});
+
+// For saving articles.
+app.put("/saved/:id", function(req, res) {
+
+    db.Article
+    .findByIdAndUpdate({ _id: req.params.id }, { $set: { isSaved: true }})
+    .then(function(dbArticle) {
+        res.json(dbArticle);
+    })
+    .catch(function(err) {
+        res.json(err);
+    });
+});
+
+// For getting saved articles.
+app.get("/saved", function(req, res) {
+
+    db.Article.find({ isSaved: true })
+    .then(function(dbArticle) {
+        res.json(dbArticle);
+    })
+    .cathc(function(err) {
+        res.json(err);
+    });
+});
+
+// For deleting saved articles.
+app.put("/delet/:id", function(req, res) {
+
+    db.Article
+    .findByIdAndUpdate({ _id: req.params.id }, { $set: { isSaved: false }})
+    .then(function(dbArticle) {
+        res.json(dbArticle);
+    })
+    .catch(function(err) {
+        res.json(err);
+    });
+});
+
+// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
+var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines";
+
+// Set mongoose to leverage built in JavaScript ES6 Promises
+// Connect to the Mongo DB
+mongoose.Promise = Promise;
+mongoose.connect(MONGODB_URI);
+
+
+// Start server.
+app.listen(PORT, function() {
+    console.log("App running on port " + PORT + ".");
+});
