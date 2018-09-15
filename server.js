@@ -18,7 +18,7 @@ var cheerio = require("cheerio");
 
 // =================== PORTS =================== //
 
-var port = process.env.PORT || 3000;
+var PORT = process.env.PORT || 3000;
 
 // Initialize express.
 var app = express();
@@ -28,6 +28,12 @@ var app = express();
 app.use(logger("dev"));
 app.use(bodyParser.urlencoded({ extended: false}));
 app.use(express.static("public"));
+
+app.engine("handlebars", exphbs({
+    defaultLayout: "main",
+    partialsDir: path.join(__dirname, "/views/layouts/partials")
+}));
+app.set("view engine", "handlebars");
 
 // =================== Routes =================== //
 
