@@ -48,15 +48,8 @@ var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines
 mongoose.Promise = Promise;
 mongoose.connect(MONGODB_URI);
 
-var db = mongoose.connection;
+var db = require("./models");
 
-db.on("error", function(err) {
-    console.log("Mongoose Error: ", err);
-});
-
-db.once("open", function() {
-    console.log("Mongoose connection successful.");
-});
 
 // =================== Routes =================== //
 
@@ -169,11 +162,11 @@ app.put("/saved/:id", function(req, res) {
 // For getting saved articles.
 app.get("/saved", function(req, res) {
 
-    db.Article.find({ isSaved: true })
+    db.Article.find({ saved: true })
     .then(function(dbArticle) {
         res.json(dbArticle);
     })
-    .cathc(function(err) {
+    .catch(function(err) {
         res.json(err);
     });
 });
