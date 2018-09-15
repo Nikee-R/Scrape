@@ -137,7 +137,7 @@ app.get("/saved", function(req, res) {
 });
 
 // For deleting saved articles.
-app.put("/delet/:id", function(req, res) {
+app.put("/delete/:id", function(req, res) {
 
     db.Article
     .findByIdAndUpdate({ _id: req.params.id }, { $set: { isSaved: false }})
