@@ -1,15 +1,15 @@
 
-<!-- Home -->
+<!-- Homepage -->
 
-<div class="container">
-    <div class="col-md-12 jumbotron">
-        <div class="text-center">
-            <h1>Mongo Scraper</h1>
-            <h2>Science News</h2>
-        </div>
-
+<!-- Body -->
+<!-- Head -->
+     <div class="jumbotron text-center">
+        <h1>Science News Scraper</h1>
+        <p></p>
+        <a class="btn-fetch btn btn-primary" href="#" role="button">Fetch New Articles</a>
     </div>
-    <div class="col-sm-4">
+<!-- This controls where the articles are displayed. -->
+    <div class="col-md-12">
         {{#if article}}
             {{#each article}}
             <div class="panel panel-default">

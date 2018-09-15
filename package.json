@@ -1,16 +1,17 @@
 {
   "name": "scrape",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Web at that grabs articles from sciencenews.org and allows the user to save articles as well as make notes.",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Nikee-R/Scrape.git"
   },
-  "author": "",
+  "author": "Nikee Rivera",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Nikee-R/Scrape/issues"
@@ -21,6 +22,7 @@
     "cheerio": "^1.0.0-rc.2",
     "express": "^4.16.3",
     "express-handlebars": "^3.0.0",
+    "moment": "^2.22.2",
     "mongoose": "^5.2.14",
     "morgan": "^1.9.1",
     "path": "^0.12.7",

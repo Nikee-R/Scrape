@@ -13,11 +13,6 @@ var ArticleSchema = new Schema({
     },
     summary: {
         type: String,
-        required: true
-    },
-    link: {
-        type: String,
-        required: true
     },
     saved: {
         type: Boolean,
@@ -25,7 +20,7 @@ var ArticleSchema = new Schema({
     },
     notes: [{
         type: Schema.Types.ObjectId,
-        ref: "note"
+        ref: "Note"
     }]
 });
 

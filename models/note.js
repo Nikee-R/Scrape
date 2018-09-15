@@ -1,4 +1,3 @@
-// ============= Dependencies ============= //
 
 var mongoose = require("mongoose");
 
@@ -7,12 +6,12 @@ var Schema = mongoose.Schema;
 
 // Create note schema.
 var NoteSchema = new Schema({
-    body: {
+    body: { 
         type: String
     },
     article: {
         type: Schema.Types.ObjectId,
-        ref: "article"
+        ref: "Article"
     }
 });
 
