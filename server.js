@@ -4,10 +4,17 @@ var express = require("express");
 var exphbs = require("express-handlebars");
 var mongoose = require("mongoose");
 var bodyParser = require("body-parser");
-var request = require("request");
-var cheerio = require("cheerio");
 var logger = require("morgan");
 var db = require("./models");
+var path = require("path");
+
+// For models.
+var Note = require("./models/note.js");
+var Article = require("./models/article.js");
+
+// For scraping.
+var request = require("request");
+var cheerio = require("cheerio");
 
 // =================== PORTS =================== //
 
