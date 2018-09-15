@@ -1,11 +1,9 @@
 // =================== Dependencies =================== //
 
 var express = require("express");
-var exphbs = require("express-handlebars");
 var mongoose = require("mongoose");
 var bodyParser = require("body-parser");
 var logger = require("morgan");
-var db = require("./models");
 var path = require("path");
 
 // For models.
@@ -26,8 +24,15 @@ var app = express();
 // =================== Middleware =================== //
 
 app.use(logger("dev"));
-app.use(bodyParser.urlencoded({ extended: false}));
+app.use(bodyParser.urlencoded({ 
+    extended: false
+}));
+
+// Make public a static.
 app.use(express.static("public"));
+
+// Set handlebars.
+var exphbs = require("express-handlebars");
 
 app.engine("handlebars", exphbs({
     defaultLayout: "main",
@@ -35,20 +40,44 @@ app.engine("handlebars", exphbs({
 }));
 app.set("view engine", "handlebars");
 
+// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
+var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines";
+
+// Set mongoose to leverage built in JavaScript ES6 Promises
+// Connect to the Mongo DB
+mongoose.Promise = Promise;
+mongoose.connect(MONGODB_URI);
+
+var db = mongoose.connection;
+
+db.on("error", function(err) {
+    console.log("Mongoose Error: ", err);
+});
+
+db.once("open", function() {
+    console.log("Mongoose connection successful.");
+});
+
 // =================== Routes =================== //
 
 // For default page.
 app.get("/", function (req, res) {
-    res.send(index.html);
+    Article.find({"saved": false}, function(err, data) {
+        var hbsObject = {
+            article: data
+        };
+        console.log(hbsObject);
+        res.render("home", hbsObject);
+    });
 });
 
 // For scraping articles.
 app.get("/scrape", function (req, res) {
-    request("https://www.sciencedaily.com/", function(err, res, html) {
+    request("https://www.sciencenews.org/", function(err, res, html) {
 
     var $ = cheerio.load(html);
 
-    $(".title-link").each(function(i, element) {
+    $("article").each(function(i, element) {
 
         var title = $(element).children().text();
         var link = $(element).attr("href");
@@ -161,15 +190,6 @@ app.put("/delete/:id", function(req, res) {
         res.json(err);
     });
 });
-
-// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
-var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines";
-
-// Set mongoose to leverage built in JavaScript ES6 Promises
-// Connect to the Mongo DB
-mongoose.Promise = Promise;
-mongoose.connect(MONGODB_URI);
-
 
 // Start server.
 app.listen(PORT, function() {
