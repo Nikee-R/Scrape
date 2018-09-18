@@ -84,7 +84,7 @@ app.get("/saved", function(req,res) {
 
 // For scraping articles.
 app.get("/scrape", function (req, res) {
-    request("https://www.sciencedaily.com/", function(error, result, html) {
+    request("https://www.sciencedaily.com/", function(error, response, html) {
 
     var $ = cheerio.load(html);
 
@@ -92,9 +92,10 @@ app.get("/scrape", function (req, res) {
 
        var result = {};
 
-       result.title = $(this).children(".hero").text();
+       result.title = $(this).children("h3").text();
        result.summary = $(this).children(".hero-blurb").text();
-       result.date = $(this).children("#date").text.children("a").attr("href");
+       result.link = $(this).children("a").attr("href");
+       result.date = $(this).children(".story-date").text();
 
        // Create new entry.
        var entry = new Article(result);
