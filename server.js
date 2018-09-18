@@ -7,8 +7,7 @@ var logger = require("morgan");
 var path = require("path");
 
 // For models.
-var Note = require("./models/Note.js");
-var Article = require("./models/Article.js");
+var db = require("./models");
 
 // For scraping.
 var request = require("request");
@@ -50,21 +49,11 @@ var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines
 // Connect to the Mongo DB
 mongoose.connect(MONGODB_URI, { useNewUrlParser: true });
 
-var db = mongoose.connection;
-
-db.on("error", function(err) {
-    console.log("Mongoose Error: ", err);
-});
-
-db.once("open", function() {
-    console.log("Mongoose Connection successful.");
-});
-
 // =================== Routes =================== //
 
 // For default page.
 app.get("/", function (req, res) {
-    Article.find({"Saved": false}, function(err, data) {
+    db.Article.find({"Saved": false}, function(err, data) {
         var hbsObject = {
             article: data
         };
@@ -74,7 +63,7 @@ app.get("/", function (req, res) {
 });
 
 app.get("/saved", function(req,res) {
-    Article.find({"Saved": true}).populate("notes").exec(function(err, articles) {
+    db.Article.find({"Saved": true}).populate("notes").exec(function(err, articles) {
         var hbsObject = {
             article: articles
         };
@@ -88,37 +77,43 @@ app.get("/scrape", function (req, res) {
 
     var $ = cheerio.load(html);
 
-    $("article").each(function(i, element) {
+    $(".science_heroes").each(function(i, element) {
 
-       var result = {};
+       var title = $(element).children().text();
+       var link = $(element).attr("href");
+       var summary = $(element).siblings("p").text().trim();
+       var date = moment().format("YYYY MM DD hh:mm:ss");
 
-       result.title = $(this).children("h3").text();
-       result.summary = $(this).children(".hero-blurb").text();
-       result.link = $(this).children("a").attr("href");
-       result.date = $(this).children(".story-date").text();
+       var result = {
+           title: title,
+           link: link,
+           summary: summary,
+           date: date,
+           saved: false
+       }
 
-       // Create new entry.
-       var entry = new Article(result);
+       console.log(result);
 
-       // Save to db.
-       entry.save(function(err, doc) {
+       db.Article.findOne({title:title}).then(function(data) {
+           console.log(data);
 
-        // Log errors.
-        if (err) {
-            console.log(err);
-        } else {
-            console.log(doc);
-        }
+           if(data === null) {
+               db.Article.create(result).then(function(dbArticle) {
+                   res.json(dbArticle);
+               });
+           }
+       }).catch(function(err) {
+           res.json(err);
+       });
     });
 });
     res.send("Scrape Successful!");
-});
 });
 
 // For articles in database.
 app.get("/articles", function(req, res) {
 
-    Article.find({}, function(err, doc) {
+    db.Article.find({}, function(err, doc) {
         // Log errors.
         if (err) {
             console.log(err);
@@ -131,7 +126,7 @@ app.get("/articles", function(req, res) {
 // For grabbing articles by id.
 app.get("/articles/:id", function(req, res) {
 
-   Article.findOne({ "_id": req.params.id })
+   db.Article.findOne({ "_id": req.params.id })
    .populate("note")
    .exec(function(err, doc) {
        // Log errors.
@@ -145,7 +140,7 @@ app.get("/articles/:id", function(req, res) {
 
 // For saving articles.
 app.post("/articles/save/:id", function(req, res) {
-    Article.findOneAndUpdate({ "_id": req.params.id }, { "saved": true })
+    db.Article.findOneAndUpdate({ "_id": req.params.id }, { "saved": true })
     .exec(function(err, doc) {
         // Log errors.
         if (err) {
@@ -159,7 +154,7 @@ app.post("/articles/save/:id", function(req, res) {
 // For deleting articles.
 app.post("/articles/delete/:id", function(req, res) {
 
-    Article.findByIdAndUpdate({ "_id": req.params.id }, {"saved": false, "notes": []})
+    db.Article.findByIdAndUpdate({ "_id": req.params.id }, {"saved": false, "notes": []})
     .exec(function(err, doc) {
         // Logs errors.
         if (err) {
@@ -197,13 +192,13 @@ app.post("/notes/save/:id", function(req, res) {
 
 // For deleting a note.
 app.delete("/notes/delete/:note_id/:article_id", function(req, res) {
-    Note.findOneAndRemove({ "_id": req.params.note_id }, function(err) {
+    db.Note.findOneAndRemove({ "_id": req.params.note_id }, function(err) {
         // Logs errors.
         if (err) {
             console.log(err);
             res.send(err);
         } else {
-            Article.findByIdAndUpdate({ "_id": req.params.article_id }, {$pull: {"notes": req.params.note_id}})
+            db.Article.findByIdAndUpdate({ "_id": req.params.article_id }, {$pull: {"notes": req.params.note_id}})
             .exec(function(err) {
                 // Logs errors.
                 if (err) {
