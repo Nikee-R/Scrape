@@ -1,7 +1,7 @@
 // ============= Dependencies ============= //
 
 var mongoose = require("mongoose");
-var Note = require("./note");
+var Note = require("./Note");
 
 // Creates schema.
 var Schema = mongoose.Schema;
@@ -13,6 +13,11 @@ var ArticleSchema = new Schema({
     },
     summary: {
         type: String,
+        required: true
+    },
+    link: {
+        type: String,
+        required: true
     },
     saved: {
         type: Boolean,

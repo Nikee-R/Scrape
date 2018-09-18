@@ -5,15 +5,16 @@ var mongoose = require("mongoose");
 var bodyParser = require("body-parser");
 var logger = require("morgan");
 var path = require("path");
-var moment = require("moment");
 
 // For models.
-var Note = require("./models/note.js");
-var Article = require("./models/article.js");
+var Note = require("./models/Note.js");
+var Article = require("./models/Article.js");
 
 // For scraping.
 var request = require("request");
 var cheerio = require("cheerio");
+
+mongoose.Promise = Promise;
 
 // =================== PORTS =================== //
 
@@ -41,12 +42,12 @@ app.engine("handlebars", exphbs({
 }));
 app.set("view engine", "handlebars");
 
+
 // If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
 var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines";
 
 // Set mongoose to leverage built in JavaScript ES6 Promises
 // Connect to the Mongo DB
-mongoose.Promise = Promise;
 mongoose.connect(MONGODB_URI, { useNewUrlParser: true });
 
 var db = mongoose.connection;
@@ -55,7 +56,7 @@ db.on("error", function(err) {
     console.log("Mongoose Error: ", err);
 });
 
-db.once("open", function(err) {
+db.once("open", function() {
     console.log("Mongoose Connection successful.");
 });
 
@@ -63,27 +64,27 @@ db.once("open", function(err) {
 
 // For default page.
 app.get("/", function (req, res) {
-    Article.find({"saved": false}, function(err, data) {
+    Article.find({"Saved": false}, function(err, data) {
         var hbsObject = {
             article: data
         };
         console.log(hbsObject);
-        res.render("home", hbsObject);
+        res.render("Homepage", hbsObject);
     });
 });
 
 app.get("/saved", function(req,res) {
-    Article.find({"saved": true}).populate("notes").exec(function(err, articles) {
+    Article.find({"Saved": true}).populate("notes").exec(function(err, articles) {
         var hbsObject = {
             article: articles
         };
-        res.render("saved", hbsObject);
+        res.render("Saved", hbsObject);
     });
 });
 
 // For scraping articles.
 app.get("/scrape", function (req, res) {
-    request("https://www.nytimes.com", function(error, result, html) {
+    request("https://www.sciencedaily.com/", function(error, result, html) {
 
     var $ = cheerio.load(html);
 
@@ -91,9 +92,9 @@ app.get("/scrape", function (req, res) {
 
        var result = {};
 
-       result.title = $(this).children("h2").text();
-       result.summary = $(this).children(".summary").text();
-       result.link = $(this).children("h2").children("a").attr("href");
+       result.title = $(this).children(".hero").text();
+       result.summary = $(this).children(".hero-blurb").text();
+       result.date = $(this).children("#date").text.children("a").attr("href");
 
        // Create new entry.
        var entry = new Article(result);
