@@ -5,9 +5,11 @@ var mongoose = require("mongoose");
 var bodyParser = require("body-parser");
 var logger = require("morgan");
 var path = require("path");
+var moment = require("moment");
 
 // For models.
-var db = require("./models");
+var Note = require("./models/Note.js");
+var Article = require("./models/Article.js");
 
 // For scraping.
 var request = require("request");
@@ -49,11 +51,23 @@ var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines
 // Connect to the Mongo DB
 mongoose.connect(MONGODB_URI, { useNewUrlParser: true });
 
+// Show errors in mongoose.
+var db = mongoose.connection;
+
+db.on("error", function(err) {
+    console.log("Mongoose Error: ", err);
+});
+
+// Success message.
+db.once("open", function() {
+    console.log("Mongoose connect successful.");
+});
+
 // =================== Routes =================== //
 
 // For default page.
 app.get("/", function (req, res) {
-    db.Article.find({"Saved": false}, function(err, data) {
+    Article.find({"Saved": false}, function(err, data) {
         var hbsObject = {
             article: data
         };
@@ -63,7 +77,7 @@ app.get("/", function (req, res) {
 });
 
 app.get("/saved", function(req,res) {
-    db.Article.find({"Saved": true}).populate("notes").exec(function(err, articles) {
+    Article.find({"Saved": true}).populate("notes").exec(function(err, articles) {
         var hbsObject = {
             article: articles
         };
@@ -73,47 +87,43 @@ app.get("/saved", function(req,res) {
 
 // For scraping articles.
 app.get("/scrape", function (req, res) {
+    // Grabs from Science Daily website.
     request("https://www.sciencedaily.com/", function(error, response, html) {
-
+    // Loads scrape into Cheerio.
     var $ = cheerio.load(html);
 
-    $(".science_heroes").each(function(i, element) {
+    $("#science_heroes").each(function(i, element) {
 
-       var title = $(element).children().text();
-       var link = $(element).attr("href");
-       var summary = $(element).siblings("p").text().trim();
-       var date = moment().format("YYYY MM DD hh:mm:ss");
+       var result = {}
 
-       var result = {
-           title: title,
-           link: link,
-           summary: summary,
-           date: date,
-           saved: false
-       }
+       // Adds the title and summary of every link to an object.
+       result.title = $(this).children("h3").text();
+       result.summary = $(this).children(".hero-blurb").text();
+       result.link = $(this).children(".col-xs-6").children("a").attr("href");
 
-       console.log(result);
+       // Uses Article model to create a new entry.
+       var entry = new Article(result);
 
-       db.Article.findOne({title:title}).then(function(data) {
-           console.log(data);
-
-           if(data === null) {
-               db.Article.create(result).then(function(dbArticle) {
-                   res.json(dbArticle);
-               });
+       // Saves in db.
+       entry.save(function(err, doc) {
+           // Logs errors.
+           if (err) {
+               console.log(err);
+           } else {
+               console.log(doc);
            }
-       }).catch(function(err) {
-           res.json(err);
-       });
+        });
+
     });
+        res.send("Scrape successful!");
+     });
 });
-    res.send("Scrape Successful!");
-});
+
 
 // For articles in database.
 app.get("/articles", function(req, res) {
 
-    db.Article.find({}, function(err, doc) {
+    Article.find({}, function(err, doc) {
         // Log errors.
         if (err) {
             console.log(err);
@@ -126,7 +136,7 @@ app.get("/articles", function(req, res) {
 // For grabbing articles by id.
 app.get("/articles/:id", function(req, res) {
 
-   db.Article.findOne({ "_id": req.params.id })
+   Article.findOne({ "_id": req.params.id })
    .populate("note")
    .exec(function(err, doc) {
        // Log errors.
@@ -140,7 +150,7 @@ app.get("/articles/:id", function(req, res) {
 
 // For saving articles.
 app.post("/articles/save/:id", function(req, res) {
-    db.Article.findOneAndUpdate({ "_id": req.params.id }, { "saved": true })
+    Article.findOneAndUpdate({ "_id": req.params.id }, { "saved": true })
     .exec(function(err, doc) {
         // Log errors.
         if (err) {
@@ -154,7 +164,7 @@ app.post("/articles/save/:id", function(req, res) {
 // For deleting articles.
 app.post("/articles/delete/:id", function(req, res) {
 
-    db.Article.findByIdAndUpdate({ "_id": req.params.id }, {"saved": false, "notes": []})
+    Article.findByIdAndUpdate({ "_id": req.params.id }, {"saved": false, "notes": []})
     .exec(function(err, doc) {
         // Logs errors.
         if (err) {
@@ -192,7 +202,7 @@ app.post("/notes/save/:id", function(req, res) {
 
 // For deleting a note.
 app.delete("/notes/delete/:note_id/:article_id", function(req, res) {
-    db.Note.findOneAndRemove({ "_id": req.params.note_id }, function(err) {
+    Note.findOneAndRemove({ "_id": req.params.note_id }, function(err) {
         // Logs errors.
         if (err) {
             console.log(err);
